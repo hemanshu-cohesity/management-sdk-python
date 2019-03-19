@@ -1,60 +1,45 @@
 # Copyright 2019 Cohesity Inc.
 #
-# Python example to list recent user_configurable unresolved alert unresolved Alerts.
+# Python example to add a VM to a protection Job.
 # This script is compatible with Python2
-# Usage: python list_unresolved_alerts.py --max_alerts 10
+# Usage: python register_vcenter.py
 
 import os
 import argparse
-import datetime
-
 from cohesity_management_sdk.cohesity_client import CohesityClient
-from cohesity_management_sdk.models.alert_state_list_enum \
-    import AlertStateListEnum
+from cohesity_management_sdk.models.environment_enum import EnvironmentEnum
+from cohesity_management_sdk.models.vmware_type_enum import VmwareTypeEnum
+from cohesity_management_sdk.models.register_protection_source_parameters \
+    import RegisterProtectionSourceParameters
 from cohesity_app_sdk.app_client import AppClient
 
-MAX_ALERTS = 100
 
-class Alerts(object):
-    """
-    Class to display Alerts.
-    """
-    severity_map = {'kCritical':'CRITICAL', 'kWarning':'WARNING',
-                    'kInfo':'INFO'}
-    category_map = {'kDisk':'DISK', 'kNode': 'NODE', 'kCluster': 'CLUSTER',
-                    'kNodeHealth': 'NODE_HEALTH',
-                    'kClusterHealth': 'CLUSTER_HEALTH',
-                    'kBackupRestore': 'BACKUP_RESTORE',
-                    'kEncryption':'ENCRYPTION',
-                    'kArchivalRestore': 'ARCHIVAL_RESTORE'}
+CLUSTER_USERNAME = 'cluster_username'
+CLUSTER_PASSWORD = 'cluster_password'
+CLUSTER_VIP = 'prod-cluster.cohesity.com'
+VCENTER_IP = 'vcenter_ip'
+VCENTER_USERNAME = 'administrator'
+VCENTER_PASSWORD = 'vcenter_password'
 
-    def display_alerts(self, cohesity_client, max_alerts):
-        """
-        Method to display the list of Unresolved Alerts
-        :param cohesity_client(object): Cohesity client object.
-        :return:
-        """
-        alerts = cohesity_client.alerts
-        alerts_list = alerts.get_alerts(max_alerts=max_alerts,
-                                        alert_state_list=
-                                        [AlertStateListEnum.KOPEN])
-        for alert in alerts_list:
-            print ('{0:<10}\t\t{1:>8}\t{2:>10}'.
-                   format(self.epoch_to_date(alert.first_timestamp_usecs),
-                          self.category_map[alert.alert_category],
-                          self.severity_map[alert.severity]))
+class AddVCenter(object):
 
-    @staticmethod
-    def epoch_to_date(epoch):
-        """
-        Method to convert epoch time in usec to date format
-        :param epoch(int): Epoch time of the job run.
-        :return: date(str): Date format of the job run.
-        """
-        date_string = datetime.datetime.fromtimestamp(epoch/10**6).\
-            strftime('%m-%d-%Y %H:%M:%S')
-        return date_string
+    def __init__(self, cohesity_client):
+        self.cohesity_client = cohesity_client
 
+    def register_vcenter(self):
+        """
+        Method to register vcenter.
+        :return True, False.
+        """
+        req_body = RegisterProtectionSourceParameters()
+        req_body.endpoint = VCENTER_IP
+        req_body.username = VCENTER_USERNAME
+        req_body.password = VCENTER_PASSWORD
+        req_body.environment = EnvironmentEnum.K_VMWARE
+        req_body.vmware_type = VmwareTypeEnum.KVCENTER
+        source = self.cohesity_client.protection_sources
+        source.create_register_protection_source(req_body)
+        print("Successfully Registered the vCenter.")
 
 def get_mgnt_token():
     """
@@ -76,7 +61,6 @@ def get_mgnt_token():
     mgmt_auth_token = token.create_management_access_token()
     return mgmt_auth_token
 
-
 def get_cmdl_args():
     """"
     To accept all commandline arguments eg userId and password
@@ -88,14 +72,11 @@ def get_cmdl_args():
     parser.add_argument("-i", "--cluster_vip", help="Cluster VIP to login")
     parser.add_argument("-u", "--user", help="Username to login")
     parser.add_argument("-p", "--password", help="password to login")
-    parser.add_argument("--max_alerts", help="Number of Alerts.",
-                        default=MAX_ALERTS)
     args = parser.parse_args()
     return args
 
 
 def main():
-
     # Login to the cluster
     args = get_cmdl_args()
     if args.cluster_vip is not None and args.user is not None and \
@@ -113,8 +94,8 @@ def main():
         cohesity_client = CohesityClient(cluster_vip=host_ip,
                                          auth_token=mgmt_auth_token)
 
-    alerts = Alerts()
-    alerts.display_alerts(cohesity_client, args.max_alerts)
+    vcenter_object = AddVCenter(cohesity_client)
+    vcenter_object.register_vcenter()
 
 
 if __name__ == '__main__':
