@@ -16,6 +16,7 @@ import pprint
 import random
 import string
 
+from cohesity_app_sdk.app_client import AppClient
 from cohesity_management_sdk.cohesity_client import CohesityClient
 from cohesity_management_sdk.exceptions.api_exception import APIException
 from cohesity_management_sdk.models.protocol_access_enum \
