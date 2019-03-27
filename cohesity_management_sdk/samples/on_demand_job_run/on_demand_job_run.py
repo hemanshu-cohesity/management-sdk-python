@@ -86,6 +86,11 @@ def get_mgnt_token():
     app_cli = AppClient(app_auth_token, app_endpoint_ip, app_endpoint_port)
     app_cli.config.disable_logging()
 
+
+    # Get the settings information.
+    settings = app_cli.settings
+    print(settings.get_app_settings())
+
     # Get the management access token.
     token = app_cli.token_management
     mgmt_auth_token = token.create_management_access_token()
@@ -94,15 +99,10 @@ def get_mgnt_token():
 
 def get_cmdl_args():
     """"
-    To accept all commandline arguments eg userId and password
+    To accept all commandline arguments 
     """
     parser = argparse.ArgumentParser(description="Arguments needed to run "
-                                                 "python scripts eg. "
-                                                 "cluster_vip,"
-                                                 "UserName & Password")
-    parser.add_argument("-i", "--cluster_vip", help="Cluster VIP to login")
-    parser.add_argument("-u", "--user", help="Username to login")
-    parser.add_argument("-p", "--password", help="password to login")
+                                                 "Name of Protetion Job")
     parser.add_argument("--job_name", help="Name of the Protection Job.",
                         required=True)
     args = parser.parse_args()
@@ -112,24 +112,14 @@ def get_cmdl_args():
 def main():
     # Login to the cluster
     args = get_cmdl_args()
-    if args.cluster_vip is not None and args.user is not None and \
-    args.password is not None:
-        cohesity_client = CohesityClient(cluster_vip=args.cluster_vip,
-                                         username=args.user,
-                                         password=args.password)
-    elif args.cluster_vip is not None or args.user is not None or \
-    args.password is not None:
-        print("Please provide all inputs ie. cluster_vip, user & password")
-        exit()
-    else:
-        host_ip = os.getenv('HOST_IP')
-        mgmt_auth_token = get_mgnt_token()
-        cohesity_client = CohesityClient(cluster_vip=host_ip,
+    host_ip = os.getenv('HOST_IP')
+    mgmt_auth_token = get_mgnt_token()
+    cohesity_client = CohesityClient(cluster_vip=host_ip,
                                          auth_token=mgmt_auth_token)
 
     pj = ProtectionJobs(cohesity_client)
     pj.run_job(args.job_name)
-
+    print("Started Protection Job \t\t{0}".format(args.job_name)) 
 
 if __name__ == '__main__':
     main()
